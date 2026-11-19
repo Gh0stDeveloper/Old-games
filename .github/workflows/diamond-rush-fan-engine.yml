@@ -61,11 +61,21 @@ jobs:
             smali assemble build/decoded/smali_classes2 -o build/classes2.dex
           fi
 
+      - name: Disassemble rebuilt DEX again to verify actual smali instructions
+        run: |
+          mkdir -p build/redecoded
+          baksmali disassemble build/classes.dex -o build/redecoded/smali
+          if test -f build/classes2.dex; then
+            baksmali disassemble build/classes2.dex -o build/redecoded/smali_classes2
+          fi
+
       - name: Compare DEX symbol tables and generate navigation report
         run: |
           python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py roundtrip \
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
-            --rebuilt build/classes.dex --out build/roundtrip.json
+            --rebuilt build/classes.dex --rebuilt-second build/classes2.dex --out build/roundtrip.json
+          python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py compare-smali \
+            --original build/decoded --rebuilt build/redecoded --out build/smali-comparison.json
           python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py report \
             --smali build/decoded --out build/navigation.md
           cat build/navigation.md >> "$GITHUB_STEP_SUMMARY"
@@ -82,4 +92,5 @@ jobs:
           path: |
             build/inspection.json
             build/roundtrip.json
+            build/smali-comparison.json
             build/navigation.md

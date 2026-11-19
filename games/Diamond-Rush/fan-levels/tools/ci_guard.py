@@ -79,18 +79,57 @@ def inspect(args):
 
 def roundtrip(args):
     files = load_apk(args.apk)
-    original = dex_stats(files["classes.dex"])
-    assembled = dex_stats(pathlib.Path(args.rebuilt).read_bytes())
-    differences = {k: [original[k], assembled[k]] for k in original if original[k] != assembled[k]}
-    result = {"source_symbol_tables": original,
-              "assembled_symbol_tables": assembled,
-              "differences": differences,
-              "reconstructed_without_apk": True,
-              "fan_level_runtime_hook": False}
+    checks = {}
+    for name, rebuilt_path in (
+        ("classes.dex", args.rebuilt),
+        ("classes2.dex", args.rebuilt_second),
+    ):
+        if not rebuilt_path:
+            if name in files:
+                raise ValueError(f"Missing reassembled {name}")
+            continue
+        if name not in files:
+            raise ValueError(f"Unexpected reconstructed {name}")
+        original = dex_stats(files[name])
+        assembled = dex_stats(pathlib.Path(rebuilt_path).read_bytes())
+        differences = {k: [original[k], assembled[k]]
+                       for k in original if original[k] != assembled[k]}
+        # An assembler may drop UNUSED string or method-id entries.
+        # Identity of the actual code is checked by compare-smali, not ID counts alone.
+        essential = ("type_ids", "proto_ids", "field_ids", "class_defs")
+        critical = {k: differences[k] for k in essential if k in differences}
+        checks[name] = {
+            "original": original, "reconstructed": assembled,
+            "symbol_count_changes": differences,
+            "structural_count_failures": critical,
+        }
+        if critical:
+            save(args.out, {"checks": checks, "safe": False})
+            raise AssertionError(f"{name}: structural symbol table differences: {critical}")
+    save(args.out, {"checks": checks, "structural_counts_preserved": True})
+    print("PASS: both rebuilt DEX files preserve class/type/prototype/field counts")
+
+def compare_smali(args):
+    original = pathlib.Path(args.original)
+    rebuilt = pathlib.Path(args.rebuilt)
+    def collect(root):
+        return {str(p.relative_to(root)): p.read_text(encoding="utf-8", errors="replace")
+                for p in root.rglob("*.smali")}
+    old = collect(original)
+    new = collect(rebuilt)
+    absent = sorted(set(old) - set(new))
+    added = sorted(set(new) - set(old))
+    altered = sorted(p for p in old.keys() & new.keys() if old[p] != new[p])
+    result = {
+        "original_smali_files": len(old), "rebuilt_smali_files": len(new),
+        "missing": absent[:30], "added": added[:30], "changed": altered[:30],
+        "unchanged_count": len(old) - len(absent) - len(altered),
+        "exact_text_roundtrip": not (absent or added or altered),
+    }
     save(args.out, result)
-    if differences:
-        raise AssertionError(f"Roundtrip altered DEX symbol table counts: {differences}")
-    print("PASS: rebuilt classes.dex preserves DEX symbol table counts")
+    if absent or added or altered:
+        raise AssertionError(f"Smali roundtrip altered files: missing={len(absent)} added={len(added)} changed={len(altered)}")
+    print(f"PASS: all {len(old)} original Smali files were reassembled and reproduced identically")
 
 def report(args):
     root = pathlib.Path(args.smali)
@@ -133,12 +172,17 @@ def main():
     p = subs.add_parser("roundtrip")
     p.add_argument("--apk", required=True)
     p.add_argument("--rebuilt", required=True)
+    p.add_argument("--rebuilt-second")
+    p.add_argument("--out", required=True)
+    p = subs.add_parser("compare-smali")
+    p.add_argument("--original", required=True)
+    p.add_argument("--rebuilt", required=True)
     p.add_argument("--out", required=True)
     p = subs.add_parser("report")
     p.add_argument("--smali", required=True)
     p.add_argument("--out", required=True)
     args = parser.parse_args()
-    {"inspect": inspect, "roundtrip": roundtrip, "report": report}[args.cmd](args)
+    {"inspect": inspect, "roundtrip": roundtrip, "compare-smali": compare_smali, "report": report}[args.cmd](args)
 
 if __name__ == "__main__":
     main()
