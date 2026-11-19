@@ -86,6 +86,14 @@ jobs:
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
             --merged build/merged-classes.dex --out build/bridge-injection.json
 
+      - name: Decode original DEX with identical baksmali version for semantic comparison
+        run: |
+          mkdir -p build/baseline-smali
+          unzip -p games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk classes.dex > build/baseline-classes.dex
+          baksmali disassemble build/baseline-classes.dex -o build/baseline-smali/smali
+          unzip -p games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk classes2.dex > build/baseline-classes2.dex
+          baksmali disassemble build/baseline-classes2.dex -o build/baseline-smali/smali_classes2
+
       - name: Disassemble rebuilt DEX again to verify actual smali instructions
         run: |
           mkdir -p build/redecoded
@@ -100,7 +108,7 @@ jobs:
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
             --rebuilt build/classes.dex --rebuilt-second build/classes2.dex --out build/roundtrip.json
           python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py compare-smali \
-            --original build/decoded --rebuilt build/redecoded --out build/smali-comparison.json
+            --original build/baseline-smali --rebuilt build/redecoded --out build/smali-comparison.json
           python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py report \
             --smali build/decoded --out build/navigation.md
           cat build/navigation.md >> "$GITHUB_STEP_SUMMARY"
