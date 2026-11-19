@@ -40,6 +40,14 @@ jobs:
           apktool --version
           smali --version
 
+      - name: Compile and test fan navigation/persistence modules (JVM only)
+        run: |
+          mkdir -p build/fan-java
+          javac -d build/fan-java \
+            games/Diamond-Rush/fan-levels/src/ghost/diamondrush/fan/*.java \
+            games/Diamond-Rush/fan-levels/tests/FanBridgeSmokeTest.java
+          java -cp build/fan-java FanBridgeSmokeTest
+
       - name: Verify the existing repository APK and original level counts
         run: |
           python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py inspect \
