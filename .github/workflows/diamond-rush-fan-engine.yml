@@ -35,18 +35,19 @@ jobs:
 
       - name: Install open-source Android reverse-engineering tools
         run: |
-          sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apktool smali
+          sudo timeout 180s apt-get update -qq
+          sudo timeout 180s env DEBIAN_FRONTEND=noninteractive apt-get install -y apktool smali
           apktool --version
           smali --version
 
       - name: Compile and test fan navigation/persistence modules (JVM only)
         run: |
           mkdir -p build/fan-java
-          javac -d build/fan-java \
+          javac --release 8 -d build/fan-java \
             games/Diamond-Rush/fan-levels/src/ghost/diamondrush/fan/*.java \
             games/Diamond-Rush/fan-levels/tests/FanBridgeSmokeTest.java
           java -cp build/fan-java FanBridgeSmokeTest
+          jar cf build/fan-bridge.jar -C build/fan-java ghost
 
       - name: Verify the existing repository APK and original level counts
         run: |
@@ -68,6 +69,22 @@ jobs:
           if test -d build/decoded/smali_classes2; then
             smali assemble build/decoded/smali_classes2 -o build/classes2.dex
           fi
+
+      - name: Insert fan Java bridge classes into a TEMPORARY DEX (no APK)
+        run: |
+          set -euo pipefail
+          D8="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name d8 | sort -V | tail -1)"
+          test -n "$D8" || { echo "GitHub runner Android SDK d8 missing"; exit 1; }
+          mkdir -p build/fan-dex build/fan-smali build/merged-smali
+          "$D8" --min-api 26 --output build/fan-dex build/fan-bridge.jar
+          baksmali disassemble build/fan-dex/classes.dex -o build/fan-smali
+          test -f build/fan-smali/ghost/diamondrush/fan/FanRuntimeAdapter.smali
+          cp -R build/decoded/smali/. build/merged-smali/
+          cp -R build/fan-smali/ghost build/merged-smali/
+          smali assemble build/merged-smali -o build/merged-classes.dex
+          python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py injection \
+            --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
+            --merged build/merged-classes.dex --out build/bridge-injection.json
 
       - name: Disassemble rebuilt DEX again to verify actual smali instructions
         run: |
@@ -100,5 +117,6 @@ jobs:
           path: |
             build/inspection.json
             build/roundtrip.json
+            build/bridge-injection.json
             build/smali-comparison.json
             build/navigation.md

@@ -111,6 +111,23 @@ def roundtrip(args):
     save(args.out, {"checks": checks, "class_definition_counts_preserved": True})
     print("PASS: both rebuilt DEX files preserve class definitions; unused ID pruning recorded")
 
+def injection(args):
+    files = load_apk(args.apk)
+    original = dex_stats(files["classes.dex"])
+    merged = dex_stats(pathlib.Path(args.merged).read_bytes())
+    delta = merged["class_defs"] - original["class_defs"]
+    result = {
+        "original_classes": original["class_defs"],
+        "merged_classes": merged["class_defs"],
+        "added_classes": delta,
+        "game_menu_connected": False,
+        "apk_generated": False
+    }
+    save(args.out, result)
+    if delta < 5:
+        raise AssertionError(f"Expected five or more new fan bridge classes, got {delta}")
+    print(f"PASS: added {delta} fan Java bridge classes to temporary DEX; no APK packaged")
+
 def compare_smali(args):
     original = pathlib.Path(args.original)
     rebuilt = pathlib.Path(args.rebuilt)
@@ -176,6 +193,10 @@ def main():
     p.add_argument("--rebuilt", required=True)
     p.add_argument("--rebuilt-second")
     p.add_argument("--out", required=True)
+    p = subs.add_parser("injection")
+    p.add_argument("--apk", required=True)
+    p.add_argument("--merged", required=True)
+    p.add_argument("--out", required=True)
     p = subs.add_parser("compare-smali")
     p.add_argument("--original", required=True)
     p.add_argument("--rebuilt", required=True)
@@ -184,7 +205,7 @@ def main():
     p.add_argument("--smali", required=True)
     p.add_argument("--out", required=True)
     args = parser.parse_args()
-    {"inspect": inspect, "roundtrip": roundtrip, "compare-smali": compare_smali, "report": report}[args.cmd](args)
+    {"inspect": inspect, "roundtrip": roundtrip, "compare-smali": compare_smali, "injection": injection, "report": report}[args.cmd](args)
 
 if __name__ == "__main__":
     main()
