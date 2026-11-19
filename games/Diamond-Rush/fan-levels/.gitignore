@@ -1,0 +1,12 @@
+# No private signing material or generated APKs in this branch
+*.keystore
+*.jks
+*.p12
+*KEYSTORE_RECOVERY*
+**/build/
+**/reports/
+**/decoded/
+**/smali/
+**/smali_classes*/
+**/*.dex
+**/*.apk

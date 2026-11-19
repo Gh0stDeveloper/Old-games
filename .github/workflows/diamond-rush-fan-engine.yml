@@ -1,0 +1,85 @@
+name: Diamond Rush - Fan Engine DEX Research
+
+on:
+  push:
+    branches:
+      - feat/diamond-rush-fan-levels-engine
+    paths:
+      - ".github/workflows/diamond-rush-fan-engine.yml"
+      - "games/Diamond-Rush/fan-levels/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diamond-rush-fan-engine
+  cancel-in-progress: true
+
+jobs:
+  dex-roundtrip:
+    name: Inspect and reconstruct DEX (NO APK build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install open-source Android reverse-engineering tools
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apktool smali
+          apktool --version
+          smali --version
+
+      - name: Verify the existing repository APK and original level counts
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py inspect \
+            --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
+            --out build/inspection.json
+
+      - name: Disassemble DEX to smali (research only)
+        run: |
+          apktool d --force --no-res \
+            games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
+            --output build/decoded
+
+      - name: Reassemble each smali tree to DEX, without packaging an APK
+        run: |
+          set -euo pipefail
+          test -d build/decoded/smali
+          smali assemble build/decoded/smali -o build/classes.dex
+          if test -d build/decoded/smali_classes2; then
+            smali assemble build/decoded/smali_classes2 -o build/classes2.dex
+          fi
+
+      - name: Compare DEX symbol tables and generate navigation report
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py roundtrip \
+            --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
+            --rebuilt build/classes.dex --out build/roundtrip.json
+          python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py report \
+            --smali build/decoded --out build/navigation.md
+          cat build/navigation.md >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "No installable APK or keystore produced." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports only (no APK, DEX, game assets or keys)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diamond-rush-dex-research
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            build/inspection.json
+            build/roundtrip.json
+            build/navigation.md
