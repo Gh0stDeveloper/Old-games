@@ -83,6 +83,12 @@ jobs:
           python3 games/Diamond-Rush/fan-levels/tools/trace_engine_smali.py \
             --smali build/decoded --out build/engine-methods.json
 
+      - name: Extract world and stage routing methods for engine analysis
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/extract_engine_methods.py \
+            --smali build/decoded/smali/com/gdxgame/c/a/b.smali \
+            --out build/engine-focused-smali.txt
+
       - name: Reassemble each smali tree to DEX, without packaging an APK
         run: |
           set -euo pipefail
@@ -160,6 +166,7 @@ jobs:
           path: |
             build/inspection.json
             build/engine-methods.json
+            build/engine-focused-smali.txt
             build/roundtrip.json
             build/bridge-injection.json
             build/menu-patch.json
