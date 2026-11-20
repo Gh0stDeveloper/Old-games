@@ -55,6 +55,15 @@ jobs:
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
             --out build/inspection.json
 
+      - name: Rebuild ephemeral Lost City Stage 1 assets from the base APK
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/generate_lost_city.py \
+            --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
+            --out build/fan-assets
+          test -s build/fan-assets/w3.bin
+          test -s build/fan-assets/map_fan_levels.out
+          cat build/fan-assets/manifest.json >> "$GITHUB_STEP_SUMMARY"
+
       - name: Disassemble DEX to smali (research only)
         run: |
           apktool d --force --no-res \
