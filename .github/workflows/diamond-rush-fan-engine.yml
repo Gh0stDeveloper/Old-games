@@ -61,6 +61,11 @@ jobs:
             games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
             --output build/decoded
 
+      - name: Trace actual menu and world-loader smali methods
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/trace_engine_smali.py \
+            --smali build/decoded --out build/engine-methods.json
+
       - name: Reassemble each smali tree to DEX, without packaging an APK
         run: |
           set -euo pipefail
@@ -124,6 +129,7 @@ jobs:
           retention-days: 7
           path: |
             build/inspection.json
+            build/engine-methods.json
             build/roundtrip.json
             build/bridge-injection.json
             build/smali-comparison.json
