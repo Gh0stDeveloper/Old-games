@@ -7,6 +7,9 @@ import re
 names={
     "a()V", "T(I)V", "ab()V", "N()V", "y(I)V", "p(I)V",
     "bf()V", "bg()V", "L()V", "M()V", "F()I", "J()V",
+    "cT()V", "z(I)I", "l(II)B", "f()V", "c(Ljava/lang/String;)V",
+    "cU()V", "cS()V", "U()V", "V()V", "W()V", "X()V",
+    "T()V", "E()V",
 }
 extra_names={"a(Lb/a/a/a;)V", "G()V"}
 p=argparse.ArgumentParser()

@@ -92,6 +92,12 @@ jobs:
             --smali build/decoded/smali/com/gdxgame/c/a/b.smali \
             --out build/engine-focused-smali.txt
 
+      - name: Enumerate world-indexed fields and selectors
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/world_xrefs.py \
+            --smali build/decoded/smali/com/gdxgame/c/a/b.smali \
+            --out build/world-xrefs.json
+
       - name: Reassemble each smali tree to DEX, without packaging an APK
         run: |
           set -euo pipefail
@@ -170,6 +176,7 @@ jobs:
             build/inspection.json
             build/engine-methods.json
             build/engine-focused-smali.txt
+            build/world-xrefs.json
             build/roundtrip.json
             build/bridge-injection.json
             build/menu-patch.json
