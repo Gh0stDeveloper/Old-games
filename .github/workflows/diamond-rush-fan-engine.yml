@@ -64,6 +64,14 @@ jobs:
           test -s build/fan-assets/map_fan_levels.out
           cat build/fan-assets/manifest.json >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Verify real Lost City world against untouched Angkor source
+        run: |
+          javac --release 8 -cp build/fan-java -d build/fan-java \
+            games/Diamond-Rush/fan-levels/tests/FanStageResourceTest.java
+          java -cp build/fan-java FanStageResourceTest \
+            build/fan-assets/w3.bin \
+            games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk
+
       - name: Disassemble DEX to smali (research only)
         run: |
           apktool d --force --no-res \
