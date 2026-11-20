@@ -74,6 +74,30 @@ FAN_METHODS=r""".method private fanRestore()V
 
     invoke-direct {p0, v0}, Lcom/gdxgame/c/a/b;->y(I)V
 
+    # Fan-only buffer: preserve capacity for all 41 classic indices plus fan.
+    sget-object v0, Lcom/gdxgame/c/a/b;->H:[B
+
+    const/16 v1, 0x1000
+
+    invoke-static {v0, v1}, Ljava/util/Arrays;->copyOf([BI)[B
+
+    move-result-object v0
+
+    sput-object v0, Lcom/gdxgame/c/a/b;->H:[B
+
+    # The offset table MUST be built sequentially: world 0, 1, 2, then 3.
+    const/4 v0, 0x2
+
+    invoke-direct {p0, v0}, Lcom/gdxgame/c/a/b;->y(I)V
+
+    const/4 v0, 0x3
+
+    invoke-direct {p0, v0}, Lcom/gdxgame/c/a/b;->y(I)V
+
+    const/4 v0, 0x4
+
+    invoke-direct {p0, v0}, Lcom/gdxgame/c/a/b;->y(I)V
+
     const/4 v0, 0x5
 
     invoke-direct {p0, v0}, Lcom/gdxgame/c/a/b;->y(I)V
@@ -182,7 +206,9 @@ def run(text):
     return text,{
         "main_menu_dispatch":"N()V case 4 → fanOpen()Z",
         "world_index":3,"stage_index":0,
-        "fourth_world_bootstrap":"y(1), y(5), cL=3, cM=0, cT()",
+        "fourth_world_bootstrap":"y(1) + buffer growth + y(2..5), cL=3, cM=0, cT()",
+        "indexed_world_offsets_initialized_in_order":True,
+        "fan_working_buffer_bytes":4096,
         "fan_progress_temporarily_swapped":True,
         "classic_save_write_guarded":True,
         "classic_menu_restores_original_in_memory_progress":True,
