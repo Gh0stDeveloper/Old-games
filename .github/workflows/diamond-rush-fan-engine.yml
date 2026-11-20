@@ -146,6 +146,16 @@ jobs:
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
             --merged build/merged-classes.dex --out build/bridge-injection.json
 
+      - name: Attach REAL stage completion to isolated Lost City Preferences (temporary DEX)
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/patch_fan_completion.py \
+            --smali build/merged-smali/com/gdxgame/c/a/b.smali \
+            --out build/fan-completion.json
+          smali assemble build/merged-smali -o build/merged-classes.dex
+          python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py injection \
+            --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
+            --merged build/merged-classes.dex --out build/bridge-injection.json
+
       - name: Decode original DEX with identical baksmali version for semantic comparison
         run: |
           mkdir -p build/baseline-smali
@@ -192,5 +202,6 @@ jobs:
             build/menu-patch.json
             build/world-route-patch.json
             build/fan-entry.json
+            build/fan-completion.json
             build/smali-comparison.json
             build/navigation.md
