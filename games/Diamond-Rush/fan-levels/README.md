@@ -1,32 +1,13 @@
-# Diamond Rush Fan Levels — Engine integration branch
+# Diamond Rush Fan Levels — investigación y parche de motor
 
-This branch is **experimental**. The existing Android 7–16 APK under `games/Diamond-Rush/` is only a **read-only CI input**; do not modify it in-place.
+Rama: `feat/diamond-rush-fan-levels-engine`.
 
-## Target
+**Objetivo principal:** incorporar un mundo adicional seleccionable con un primer nivel jugable, preservando Angkor (14), Escocia (13) y Tíbet (14).
 
-`LEVELS FAN → LOST CITY → STAGE 1 → exit → fan-only persistent progress`
+**Avance comprobado:** la reconstrucción de DEX por GitHub Actions incluye el botón `LEVELS FAN`, registro del mundo 3, selector original rotulado `LOST CITY` / `STAGE 1` y llamada de finalización al guardado fan separado, con un búfer de progreso temporal que no pisa `gamedata`. El generador de recursos reconstruye un `w3.bin` de 44×30 y un `map_fan_levels.out` de un nodo.
 
-Original Angkor, Scotland and Tibet (41 level records) must remain intact. The fan world must be a genuine additional world, **not** an Angkor replacement or a relabeled leaderboard.
+**Pendiente y crítico:** ese DEX **no se ha ejecutado en Android** y todavía no hay un APK de prueba. La ruta está integrada a nivel de bytecode, pero la jugabilidad, las colisiones, la salida y la persistencia tras reiniciar siguen sin probarse.
 
-## CI workflow
+El workflow `.github/workflows/diamond-rush-fan-engine.yml` instala apktool/smali, reconstruye los dos DEX, compila clases auxiliares Java, genera recursos en almacenamiento temporal y ejecuta puertas de validación estática. **No crea APK** ni incluye credenciales de firma.
 
-`.github/workflows/diamond-rush-fan-engine.yml` runs on commits to this branch. On Ubuntu it installs `apktool` and `smali`, checks the original world's formats, disassembles and reassembles `classes.dex`, compares DEX symbol table counts and publishes text-only diagnostic reports in Actions. It deliberately **does not package or sign any APK**.
-
-When the DEX roundtrip works, locate and connect:
-- Menu render: `Lcom/gdxgame/c/a/b;->x()V`
-- Menu actions: `G()V`; state transitions: `p(I)V`; input: `az()V` and `a(Lb/a/a/a;)V`
-- Worlds: `a()V` registering `/w0.bin`, `/w1.bin`, `/w2.bin`
-- Region selector: `T(I)V`; level loader: `ab()V`
-- Stage-complete event and isolated save namespace: still to be wired and proven on Android
-
-**Warning**: Those are research leads, not a complete patch specification. The selected menu item must be traced before redirecting it.
-
-## Security and distribution
-
-Do not commit private keystores, passwords, app signing secrets, user progress or decoded proprietary asset bundles. The existing public repository already stores an adapted APK; this work does not publish additional copies. Public distribution of fan modifications must respect the original rights holders.
-
-## Current status
-
-GitHub Actions workflow and DEX roundtrip pipeline: committed for CI validation.
-Actual in-game `LEVELS FAN` selector and independent stage saving: **not implemented yet**.
-No new APK should be delivered until the complete user-visible route exists.
+Consultar [ENGINE_PROGRESS.md](docs/ENGINE_PROGRESS.md) para el estado exacto y las pruebas de Android que faltan. No fusionar a main hasta terminarlas.
