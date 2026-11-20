@@ -9,7 +9,9 @@ names={
     "bf()V", "bg()V", "L()V", "M()V", "F()I", "J()V",
     "cT()V", "z(I)I", "l(II)B", "f()V", "c(Ljava/lang/String;)V",
     "cU()V", "cS()V", "U()V", "V()V", "W()V", "X()V",
-    "T()V", "E()V",
+    "T()V", "E()V", "j(I)I", "n(II)I", "o(II)I", "m(II)V", "Y()V", "w()V",
+    "bD()V", "db()V", "dc()V", "dd()V", "df()V", "bL()V",
+    "bl()V", "cX()V", "ac()V", "cq()V",
 }
 extra_names={"a(Lb/a/a/a;)V", "G()V"}
 p=argparse.ArgumentParser()
