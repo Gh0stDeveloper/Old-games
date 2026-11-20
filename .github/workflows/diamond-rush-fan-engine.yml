@@ -156,6 +156,14 @@ jobs:
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
             --merged build/merged-classes.dex --out build/bridge-injection.json
 
+      - name: Check fourth-world engine routes, save isolation and libGDX ABI
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/verify_fan_engine.py \
+            --smali build/merged-smali/com/gdxgame/c/a/b.smali \
+            --decoded build/decoded \
+            --assets build/fan-assets \
+            --out build/fan-engine-gates.json
+
       - name: Decode original DEX with identical baksmali version for semantic comparison
         run: |
           mkdir -p build/baseline-smali
@@ -203,5 +211,6 @@ jobs:
             build/world-route-patch.json
             build/fan-entry.json
             build/fan-completion.json
+            build/fan-engine-gates.json
             build/smali-comparison.json
             build/navigation.md
