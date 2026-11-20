@@ -35,8 +35,11 @@ jobs:
 
       - name: Install open-source Android reverse-engineering tools
         run: |
-          sudo timeout 180s apt-get update -qq
-          sudo timeout 180s env DEBIAN_FRONTEND=noninteractive apt-get install -y apktool smali
+          if test -f /etc/apt/apt-mirrors.txt; then
+            sudo sed -i 's|azure.archive.ubuntu.com|us-east-2.ec2.archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo timeout 360s apt-get update -qq -o Acquire::Retries=2 -o Acquire::http::Timeout=60
+          sudo timeout 480s env DEBIAN_FRONTEND=noninteractive apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=60 apktool smali
           apktool --version
           smali --version
 
