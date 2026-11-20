@@ -42,9 +42,17 @@ def extract(path):
             body = lines[start:end + 1]
             refs = [{"line": start + j + 1, "code": t.strip()}
                     for j, t in enumerate(body) if any(x in t for x in NEEDLES)]
+            windows = []
+            if name in {"T(I)V","a()V","N()V"}:
+                for j, line_ in enumerate(body):
+                    if any(s in line_ for s in ("/w0.bin","/w1.bin","/w2.bin", "/map_angkor.out","/map_tibet.out", ".packed-switch", "->iw:Lcom/gdxgame/c/k;")):
+                        windows.append({
+                            "line": start + j + 1,
+                            "context": body[max(0, j - 12): min(len(body), j + 25)]
+                        })
             methods[name] = {"line_start": start + 1, "line_end": end + 1,
                              "instruction_lines": len(body),
-                             "refs": refs[:140],
+                             "refs": refs[:140], "windows": windows[:25],
                              "head": body[:75] if name in {"G()V", "M()V", "T(I)V", "a()V"} else body[:20]}
         i += 1
     return methods
