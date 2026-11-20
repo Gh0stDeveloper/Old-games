@@ -86,6 +86,9 @@ jobs:
           test -f build/fan-smali/ghost/diamondrush/fan/FanRuntimeAdapter.smali
           cp -R build/decoded/smali/. build/merged-smali/
           cp -R build/fan-smali/ghost build/merged-smali/
+          python3 games/Diamond-Rush/fan-levels/tools/patch_world_routes.py \
+            --smali build/merged-smali/com/gdxgame/c/a/b.smali \
+            --out build/world-route-patch.json
           smali assemble build/merged-smali -o build/merged-classes.dex
           python3 games/Diamond-Rush/fan-levels/tools/ci_guard.py injection \
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
@@ -143,5 +146,6 @@ jobs:
             build/roundtrip.json
             build/bridge-injection.json
             build/menu-patch.json
+            build/world-route-patch.json
             build/smali-comparison.json
             build/navigation.md
