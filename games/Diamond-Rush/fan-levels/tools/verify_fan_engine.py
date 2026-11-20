@@ -30,6 +30,9 @@ def main():
     assert ".field private static fanClassicH:[B" in core
     x=one_method(core,"x()V")
     require('"LEVELS FAN"',"menu label",x)
+    selector=one_method(core,"ak()V")
+    require('"LOST CITY"',"fan region heading",selector)
+    require('"STAGE 1"',"fan first stage heading",selector)
     n=one_method(core,"N()V")
     require("->fanOpen()Z","menu tap",n)
     require("->d()V","menu fallback",n)
@@ -89,7 +92,7 @@ def main():
     require("flush()V","Preferences flush",classes["Preferences"])
     result={"stage_geometry":"44x30 one level","dex_menu_hook":True,
             "fourth_world_binary_route":True,"fourth_world_offsets_nonoverlapping":True,
-            "fourth_world_map_route":True,"stage_selector_mapping":True,
+            "fourth_world_map_route":True,"stage_selector_mapping":True,"lost_city_stage1_titles":True,
             "stage_completion_separate_preferences":True,"original_save_guard":True,
             "gameplay_on_android_tested":False,"release_allowed":False,
             "no_apk_generated":True}

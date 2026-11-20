@@ -156,6 +156,13 @@ jobs:
             --apk games/Diamond-Rush/Diamond_Rush_1.1_Android7-16_compat_v8.apk \
             --merged build/merged-classes.dex --out build/bridge-injection.json
 
+      - name: Render LOST CITY and STAGE 1 in temporary selector DEX
+        run: |
+          python3 games/Diamond-Rush/fan-levels/tools/patch_fan_titles.py \
+            --smali build/merged-smali/com/gdxgame/c/a/b.smali \
+            --out build/fan-titles.json
+          smali assemble build/merged-smali -o build/merged-classes.dex
+
       - name: Check fourth-world engine routes, save isolation and libGDX ABI
         run: |
           python3 games/Diamond-Rush/fan-levels/tools/verify_fan_engine.py \
@@ -211,6 +218,7 @@ jobs:
             build/world-route-patch.json
             build/fan-entry.json
             build/fan-completion.json
+            build/fan-titles.json
             build/fan-engine-gates.json
             build/smali-comparison.json
             build/navigation.md
