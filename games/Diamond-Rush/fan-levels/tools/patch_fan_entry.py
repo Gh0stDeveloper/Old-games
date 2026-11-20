@@ -85,6 +85,24 @@ FAN_METHODS=r""".method private fanRestore()V
 
     sput-object v0, Lcom/gdxgame/c/a/b;->H:[B
 
+    # Original layout: three 2-byte world offsets at H[14..19],
+    # followed immediately by first world data starting at fy=20.
+    # World 3 needs H[20..21], so move data to 22 to prevent overlap.
+    iget v0, p0, Lcom/gdxgame/c/a/b;->fy:I
+
+    add-int/lit8 v0, v0, 0x2
+
+    iput v0, p0, Lcom/gdxgame/c/a/b;->fy:I
+
+    # Fan-only session contains four world entries; never written to gamedata.
+    sget-object v0, Lcom/gdxgame/c/a/b;->H:[B
+
+    const/4 v1, 0x3
+
+    const/4 v2, 0x4
+
+    aput-byte v2, v0, v1
+
     # The offset table MUST be built sequentially: world 0, 1, 2, then 3.
     const/4 v0, 0x2
 
@@ -209,6 +227,9 @@ def run(text):
         "fourth_world_bootstrap":"y(1) + buffer growth + y(2..5), cL=3, cM=0, cT()",
         "indexed_world_offsets_initialized_in_order":True,
         "fan_working_buffer_bytes":4096,
+        "fan_world_offset_table_bytes":8,
+        "fan_world_data_start":22,
+        "fourth_world_offset_no_overlap":True,
         "fan_progress_temporarily_swapped":True,
         "classic_save_write_guarded":True,
         "classic_menu_restores_original_in_memory_progress":True,
