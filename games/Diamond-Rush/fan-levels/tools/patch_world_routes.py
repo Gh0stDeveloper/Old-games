@@ -159,11 +159,38 @@ def apply(text):
         '        :pswitch_3\n', '        :pswitch_3\n        :fan_world5\n'),
         "world 3 progress-load dispatch")
     text=text[:m.start()]+saved+text[m.end():]
+    # The save/level-offset getter silently maps index >=3 to Tibet.
+    # Without this, stage 1 on the fan world reads world 2 progression.
+    m=method_span(text,"j(I)I")
+    offs=m.group()
+    offs=alter(offs,
+        "    :cond_0\n    const/4 v0, 0x3\n\n    if-ge p0, v0, :cond_1",
+        "    :cond_0\n    const/4 v0, 0x4\n\n    if-ge p0, v0, :cond_1",
+        "fourth world save/level offset bound")
+    text=text[:m.start()]+offs+text[m.end():]
+    # Render the fan world with the already-supported Angkor palette, rather
+    # than the all-zero default of the three-case visual switch.
+    m=method_span(text,"dd()V")
+    color=m.group()
+    colors=(
+        "    :pswitch_data_0\n"
+        "    .packed-switch 0x0\n"
+        "        :pswitch_0\n"
+        "        :pswitch_1\n"
+        "        :pswitch_2\n"
+        "    .end packed-switch"
+    )
+    color=alter(color,colors,colors.replace(
+        "        :pswitch_2\n", "        :pswitch_2\n        :pswitch_0\n"),
+        "world 3 background color")
+    text=text[:m.start()]+color+text[m.end():]
     assert text.count('"/w3.bin"')==1 and text.count('"/map_fan_levels.out"')==2
     return text,{
         "fourth_world_binary_route_registered":True,
         "world_indexed_visual_metadata_extended":True,
         "world_3_progress_loader_route_registered":True,
+        "world_3_offsets_j_bound_extended":True,
+        "world_3_background_palette": "Angkor legacy palette",
         "fourth_world_selection_map_route_registered":True,
         "world_index":3,"world_path":"/w3.bin",
         "fan_route_path":"/map_fan_levels.out",
@@ -182,7 +209,7 @@ def main():
     path.write_text(new,encoding="utf-8")
     dst=pathlib.Path(a.out);dst.parent.mkdir(parents=True,exist_ok=True)
     dst.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
-    print("PASS: world 3 binary, map, UI palette and progress-loader routes installed in temporary DEX")
+    print("PASS: world 3 binary/map, j(3) offsets, palette, world colors, progress loader in temporary DEX")
     print("BLOCKED: fourth-world UI tables and real save callbacks not yet connected, no APK allowed")
 
 if __name__=="__main__":main()
