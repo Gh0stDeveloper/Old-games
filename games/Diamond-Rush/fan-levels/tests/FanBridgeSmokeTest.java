@@ -28,7 +28,11 @@ public final class FanBridgeSmokeTest {
         FanRuntimeAdapter app=FanRuntimeAdapter.open(engine,new ByteArrayInputStream(world),dir.toFile());
         check(FanWorldRegistry.FAN_WORLD_INDEX==3,"world index");
         check("/w3.bin".equals(FanWorldRegistry.worldAsset(3)),"world path");
-        app.onLegacyLeaderboardMenuItemTapped();
+        FanMenuEntry.unbind();
+        check(!FanMenuEntry.tryOpen(),"unbound engine must preserve legacy fallback");
+        FanMenuEntry.bind(app);
+        check(FanMenuEntry.tryOpen(),"bound fan menu entry must intercept selection");
+        check(app.screen()==FanNavigationController.Screen.FAN_WORLDS,"menu route incorrect");
         app.onFanWorldTapped("lost_city");
         app.onFanStageTapped(1);
         check(app.screen()==FanNavigationController.Screen.IN_LEVEL,"stage not running");
@@ -45,6 +49,8 @@ public final class FanBridgeSmokeTest {
         boolean blocked=false;
         try{app.onFanStageTapped(1);}catch(IllegalStateException ok){blocked=true;}
         check(blocked,"unregistered world did not block launch");
-        System.out.println("PASS: fan Java controller, fourth-world guard, session-scoped exit, isolated persistence");
+        FanMenuEntry.unbind();
+        check(!FanMenuEntry.tryOpen(),"unbind must restore no-hook fallback");
+        System.out.println("PASS: actual menu callback adapter, world 3 guard, session-scoped exit, isolated persistence");
     }
 }
