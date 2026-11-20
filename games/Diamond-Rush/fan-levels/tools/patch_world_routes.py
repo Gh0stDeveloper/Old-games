@@ -184,6 +184,25 @@ def apply(text):
         "        :pswitch_2\n", "        :pswitch_2\n        :pswitch_0\n"),
         "world 3 background color")
     text=text[:m.start()]+color+text[m.end():]
+    # The stage-select region background and map icons have separate fixed
+    # three-world switches. Use existing Angkor assets for fan graphics.
+    visuals=(
+        ("dc()V",":pswitch_data_0",(":pswitch_0",":pswitch_1",":pswitch_2"),":pswitch_0"),
+        ("db()V",":pswitch_data_1",(":pswitch_3",":pswitch_4",":pswitch_5"),":pswitch_3"),
+    )
+    for name,table,cases,fan_target in visuals:
+        m=method_span(text,name)
+        body=m.group()
+        old=(
+            f"    {table}\n"
+            "    .packed-switch 0x0\n"
+            + "".join(f"        {entry}\n" for entry in cases)
+            + "    .end packed-switch"
+        )
+        new=old.replace("    .end packed-switch",
+            f"        {fan_target}\n    .end packed-switch")
+        body=alter(body,old,new,f"world 3 graphics in {name}")
+        text=text[:m.start()]+body+text[m.end():]
     assert text.count('"/w3.bin"')==1 and text.count('"/map_fan_levels.out"')==2
     return text,{
         "fourth_world_binary_route_registered":True,
@@ -191,6 +210,8 @@ def apply(text):
         "world_3_progress_loader_route_registered":True,
         "world_3_offsets_j_bound_extended":True,
         "world_3_background_palette": "Angkor legacy palette",
+        "world_3_region_background_dc_case": "Angkor",
+        "world_3_selector_icons_db_case": "Angkor",
         "fourth_world_selection_map_route_registered":True,
         "world_index":3,"world_path":"/w3.bin",
         "fan_route_path":"/map_fan_levels.out",
