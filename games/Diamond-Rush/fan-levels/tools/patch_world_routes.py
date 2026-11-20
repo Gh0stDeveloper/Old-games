@@ -25,6 +25,43 @@ def alter(method,original,replacement,description):
 def apply(text):
     m=method_span(text,"a()V")
     init=m.group()
+    # Metadata indexed by world must have slot 3 as well. Reuse Angkor's
+    # *visual sprite index* and region palette, not its game-level data.
+    c_old=(
+        "    new-array v0, v7, [I\n\n"
+        "    fill-array-data v0, :array_a\n\n"
+        f"    sput-object v0, {GAME}->c:[I"
+    )
+    c_new=(
+        "    const/4 v1, 0x4\n\n"
+        "    new-array v0, v1, [I\n\n"
+        "    fill-array-data v0, :array_a\n\n"
+        "    const/4 v1, 0x3\n\n"
+        "    const/16 v2, 0x1c\n\n"
+        "    aput v2, v0, v1\n\n"
+        f"    sput-object v0, {GAME}->c:[I"
+    )
+    init=alter(init,c_old,c_new,"fourth visual metadata index")
+    d_old="    new-array v0, v7, [[I"
+    d_new="    const/4 v1, 0x4\n\n    new-array v0, v1, [[I"
+    init=alter(init,d_old,d_new,"fourth region palette array")
+    d_tail=(
+        "    fill-array-data v2, :array_d\n\n"
+        "    aput-object v2, v0, v1\n\n"
+        f"    sput-object v0, {GAME}->d:[[I"
+    )
+    d_extra=(
+        "    fill-array-data v2, :array_d\n\n"
+        "    aput-object v2, v0, v1\n\n"
+        "    const/4 v1, 0x3\n\n"
+        "    const/16 v2, 0xd\n\n"
+        "    new-array v2, v2, [I\n\n"
+        "    fill-array-data v2, :array_b\n\n"
+        "    aput-object v2, v0, v1\n\n"
+        f"    sput-object v0, {GAME}->d:[[I"
+    )
+    init=alter(init,d_tail,d_extra,"world 3 visual palette")
+
     # v7 is 3 in the old initializer and is only changed directly before
     # constructing the world-resource array. Earlier menu arrays remain untouched.
     old="    new-array v0, v7, [Ljava/lang/String;"
@@ -72,10 +109,61 @@ def apply(text):
     if case_lines!=[":pswitch_6",":pswitch_7",":pswitch_8"]:
         raise AssertionError(f"Unexpected original region switch cases: {case_lines}")
     region=region[:matches[0].start(3)]+"\n        :fan_world_map_3"+region[matches[0].start(3):]
+    # The world-specific UI sprite loader has another three-way switch.
+    # World 3 uses the existing Angkor region sprite while still loading its
+    # OWN map and level data.
+    visual_old=(
+        "    :pswitch_data_2\n"
+        "    .packed-switch 0x0\n"
+        "        :pswitch_b\n"
+        "        :pswitch_c\n"
+        "        :pswitch_d\n"
+        "    .end packed-switch"
+    )
+    visual_new=visual_old.replace(
+        "        :pswitch_d\n", "        :pswitch_d\n        :pswitch_b\n")
+    region=alter(region,visual_old,visual_new,"world 3 region texture")
     text=text[:m.start()]+region+text[m.end():]
-    assert text.count('"/w3.bin"')==1 and text.count('"/map_fan_levels.out"')==1
+    # y(I) initializes map/world progress data from a binary world file and
+    # associated .out map. It takes p1=worldIndex+2.
+    m=method_span(text,"y(I)V")
+    saved=m.group()
+    y_old=(
+        '    :pswitch_3\n'
+        '    if-nez v0, :cond_2\n\n'
+        '    const-string v0, "/map_tibet.out"\n\n'
+        '    :cond_2'
+    )
+    y_new=(
+        '    :pswitch_3\n'
+        '    if-nez v0, :cond_2\n\n'
+        '    const-string v0, "/map_tibet.out"\n\n'
+        '    goto :cond_2\n\n'
+        '    :fan_world5\n'
+        '    const-string v0, "/map_fan_levels.out"\n\n'
+        '    goto :cond_2\n\n'
+        '    :cond_2'
+    )
+    saved=alter(saved,y_old,y_new,"world index 3 y(I) resource input")
+    switch_tail=(
+        '    :pswitch_data_0\n'
+        '    .packed-switch 0x0\n'
+        '        :pswitch_0\n'
+        '        :pswitch_0\n'
+        '        :pswitch_1\n'
+        '        :pswitch_2\n'
+        '        :pswitch_3\n'
+        '    .end packed-switch'
+    )
+    saved=alter(saved,switch_tail,switch_tail.replace(
+        '        :pswitch_3\n', '        :pswitch_3\n        :fan_world5\n'),
+        "world 3 progress-load dispatch")
+    text=text[:m.start()]+saved+text[m.end():]
+    assert text.count('"/w3.bin"')==1 and text.count('"/map_fan_levels.out"')==2
     return text,{
         "fourth_world_binary_route_registered":True,
+        "world_indexed_visual_metadata_extended":True,
+        "world_3_progress_loader_route_registered":True,
         "fourth_world_selection_map_route_registered":True,
         "world_index":3,"world_path":"/w3.bin",
         "fan_route_path":"/map_fan_levels.out",
@@ -94,7 +182,7 @@ def main():
     path.write_text(new,encoding="utf-8")
     dst=pathlib.Path(a.out);dst.parent.mkdir(parents=True,exist_ok=True)
     dst.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
-    print("PASS: world 3 binary path and map selector route installed in temporary DEX")
+    print("PASS: world 3 binary, map, UI palette and progress-loader routes installed in temporary DEX")
     print("BLOCKED: fourth-world UI tables and real save callbacks not yet connected, no APK allowed")
 
 if __name__=="__main__":main()
