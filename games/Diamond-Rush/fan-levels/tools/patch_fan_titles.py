@@ -9,8 +9,8 @@ def method(text,name):
 def patch(content):
     m=method(content,"ak()V")
     s=m.group()
-    if ".locals 17" not in s.splitlines()[:3]:
-        raise AssertionError("Renderer register allocation changed")
+    if not re.search(r"(?m)^\s+\.locals\s+(?:17|0x11)\s*$",s):
+        raise AssertionError("Renderer local-register capacity changed")
     title=(
         "    aget v3, v3, v5\n\n"
         "    aget-object v3, v1, v3\n\n"
